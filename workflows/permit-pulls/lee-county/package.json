@@ -1,0 +1,19 @@
+{
+  "name": "lee-county-builder-pull",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Scrapes Lee County FL eConnect (Accela) for residential new-construction permits and emits a Marion-format builder CSV.",
+  "scripts": {
+    "setup": "npm install && npx playwright install chromium",
+    "pull": "node scrape.js",
+    "pull:headed": "node scrape.js --headed",
+    "inspect": "node scrape.js --inspect --headed"
+  },
+  "dependencies": {
+    "csv-stringify": "^6.5.0",
+    "playwright": "^1.47.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

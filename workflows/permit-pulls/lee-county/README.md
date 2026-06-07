@@ -202,3 +202,73 @@ must run from an authenticated browser session** (Chrome on the owner's
 machine, a Chrome MCP, or a Playwright/Selenium runner). This repo
 documents the workflow; it does not execute the network calls from the
 Claude Code container.
+
+---
+
+## Running the scraper
+
+A Playwright (headless Chromium) scraper lives next to this README.
+It drives the eConnect search, opens each detail page, filters out
+owner-builder records, and writes a CSV in the Marion column order.
+
+### One-time setup (Mac)
+
+```bash
+cd workflows/permit-pulls/lee-county
+npm run setup        # installs node deps + downloads Chromium
+```
+
+Requires Node 20+. Install Node from https://nodejs.org if you don't
+have it. The `setup` step downloads its own copy of Chromium into
+`node_modules/playwright`; it does not touch your regular Chrome.
+
+### Pull the trailing 12 months
+
+```bash
+npm run pull
+```
+
+Output drops in `./output/`:
+
+- `lee-builders-YYYY-MM-DD.csv` — Marion-format builder CSV (the file
+  the rest of the system consumes).
+- `lee-raw-YYYY-MM-DD.jsonl` — one JSON record per scraped permit
+  (kept for re-processing without re-scraping).
+
+Expected runtime for a year of residential new construction:
+**20–40 minutes**. The scraper paginates 7-day windows by default to
+stay under Lee's 100-results-per-query cap.
+
+### Watch the browser (debug)
+
+```bash
+npm run pull:headed       # same pull, visible Chromium window
+npm run inspect           # opens the search page and pauses
+```
+
+`npm run inspect` is the right move on first run if any selectors
+don't match Lee's current DOM — it opens the search page and waits at
+the Playwright pause prompt so you can right-click → Inspect the
+relevant form fields, then update the `SELECTORS` block at the top of
+`scrape.js` and re-run.
+
+### Custom range or window size
+
+```bash
+node scrape.js --from 2025-01-01 --to 2025-12-31
+node scrape.js --window-days 14            # use 14-day chunks
+node scrape.js --debug                     # screenshot failed pages
+```
+
+### What it does NOT do
+
+- **Cities.** The eConnect search covers permits filed with the County
+  DCD (unincorporated Lee + the cities that contract DCD services).
+  Standalone city permitting (e.g. Cape Coral if they self-issue) is
+  out of scope. For full city coverage, layer in the weekly PDF reports
+  from `leegov.com/dcd/reports` or each city's portal separately.
+- **Commercial multifamily.** This scraper pulls only the strict
+  residential record types. Apartment/condo 5+ is a separate config.
+- **Enrichment.** The `BLDR PRICE`, `BLDR TYPE:`, `lots sold date`,
+  `WEBSITE`, `Total Permits`, `Period` columns stay blank; they're
+  filled by downstream agents (license-board lookup, GHL match, etc.).
